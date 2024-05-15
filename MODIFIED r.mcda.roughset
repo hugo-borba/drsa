@@ -1,0 +1,68 @@
+import tkinter as tk
+from tkinter import filedialog
+import pandas as pd
+from tabulate import tabulate
+
+def open_file():
+    # Abrir a janela de diálogo para selecionar o arquivo CSV
+    filename = filedialog.askopenfilename(initialdir="/", title="Select CSV file",
+                                           filetypes=(("CSV files", "*.csv"),))
+    # Verificar se o usuário selecionou um arquivo
+    if filename:
+        try:
+            # Ler o arquivo CSV usando o pandas
+            df = pd.read_csv(filename)
+            return df
+        except Exception as e:
+            # Exibir uma mensagem de erro se ocorrer algum problema ao ler o arquivo
+            print(f"Error reading the file: {str(e)}")
+    return None
+
+def formatting_file(df):
+    try:
+        # Encontrar o índice da célula com o texto "EXEMPLES"
+        index = df.index[df.iloc[:, 0] == "EXEMPLES"][0]
+
+        # Dividir o DataFrame em dois: ATRIBUTES e EXEMPLES
+        df_atributes = df.iloc[:index]
+        df_exemples = df.iloc[index:]
+
+        # Criar um vetor de strings usando as linhas da coluna ATRIBUTES do dataframe ATRIBUTES
+        EXEMPLES_header = df_atributes.iloc[:, 0].tolist()
+
+        # Atribuir os cabeçalhos do DataFrame EXEMPLES
+        df_exemples.columns = ["EXEMPLES"] + list(EXEMPLES_header)
+
+        # Apagar a primeira linha do DataFrame EXEMPLES
+        df_exemples = df_exemples.iloc[1:]
+
+        # Substituir os sublinhados "_" por espaços nas strings da coluna "EXEMPLES"
+        df_exemples["EXEMPLES"] = df_exemples["EXEMPLES"].str.replace("_", " ")
+
+        # Apagar todas as colunas após o cabeçalho "PREFERENCE" do DataFrame ATRIBUTES
+        df_atributes = df_atributes.loc[:, :"PREFERENCE"]
+
+        # Renomear o cabeçalho "ATRIBUTES" para "NAMES" no DataFrame df_atributes
+        df_atributes = df_atributes.rename(columns={"ATRIBUTES": "NAMES"})
+
+        # Adicionar a primeira coluna "ATTRIBUTES" ao DataFrame df_atributes
+        df_atributes.insert(0, "ATTRIBUTES", [f"Attribute {i+1}" for i in range(len(df_atributes))])
+
+        # Imprimir os DataFrames resultantes
+        print("DataFrame 'ATRIBUTES':")
+        print(tabulate(df_atributes, headers='keys', tablefmt='fancy_grid', showindex=False))
+        
+        # Imprimir as primeiras 20 linhas do DataFrame EXEMPLES
+        print("\nDataframe 'EXEMPLES' - Printing the first 20 rows of the dataframe")
+        print(tabulate(df_exemples.head(20), headers='keys', tablefmt='fancy_grid', showindex=False))
+
+    except IndexError:
+        print("The 'EXEMPLES' cell was not found in the file.")
+
+def main():
+    df = open_file()
+    formatting_file(df)
+
+# Chamar a função principal
+if __name__ == "__main__":
+    main()
